@@ -8,19 +8,27 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <pthread.h>
 using namespace std;
 
+void *task(void *);
+static int clifd;
+static char buffer[256];
+
 int main(int argc, char **argv){
-	int port, sock, sockfd, clifd;
+	int i,port, sock, sockfd;//, clifd;
 	socklen_t clilen;
-	char buffer[256];
+	//char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
 	struct hostent *server;
 	string type(argv[1]);
-	
-	for (int i=0; type[i]; i++) type[i] = tolower(type[i]);
+	pthread_t *threads;
 
-	if (argc != 3 && argc != 4 || (type != "server" && type != "client")){
+	threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
+	
+	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
+
+	if ((argc != 3 && argc != 4) || (type != "server" && type != "client")){
 		fprintf(stderr, "correct calls to program\n");
 		fprintf(stderr, "	%s server port_number\n",argv[0]);
 		fprintf(stderr, "	%s client port_number host_name\n",argv[0]);
@@ -58,34 +66,21 @@ int main(int argc, char **argv){
 			exit(1);
 		}
 		
-		//listens on socket for connections
+		//listens on socket for connecetions
 		listen(sockfd, 5);
 		clilen = sizeof(cli_addr);
 		//blocks until client connects to server
 		//returns new file descriptor after connection
-		clifd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-		if (clifd < 0) {
-			fprintf(stderr,"Error on accept\n");
-			exit(1);
+		for (i=0; i<3; i++){
+			clifd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+			if (clifd < 0) {
+				fprintf(stderr,"Error on accept\n");
+				exit(1);
+			}
+			pthread_create(&threads[i],NULL,task,NULL);
 		}
-		
-		sprintf(buffer, "Server: connected\n");
-		write(clifd,buffer,strlen(buffer));
-		
-		bzero(buffer, 256);
-		if (read(clifd,buffer,256) < 0) {
-			fprintf(stderr, "Error reading from socket\n");
-			exit(1);
-		}
-
-		printf("%s",buffer);
-		
-		if (write(clifd,"Got your message\n",17)<0){
-			fprintf(stderr, "error writing to socket\n");
-			exit(1);
-		}
-		close(clifd);
 		close(sockfd);
+		for (i=0; i<3; i++) pthread_join(threads[i],NULL);
 	}
 	else if (type == "client"){
 		sockfd = socket(AF_INET, SOCK_STREAM,0);
@@ -108,10 +103,28 @@ int main(int argc, char **argv){
 		if (write(sockfd, buffer, strlen(buffer))<0) fprintf(stderr,"error writing to socket\n");
 		sprintf(buffer,"");
 		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
-		buffer[256]='\0';
+		buffer[255]='\0';
 		printf("%s",buffer);
 		close(sockfd);
 	}
 
 	exit(0);
+}
+
+void *task(void *){
+	cout << pthread_self() << endl;
+	sprintf(buffer, "Server: connected\n");
+	write(clifd,buffer,strlen(buffer));
+	bzero(buffer, 256);
+	if (read(clifd,buffer,256) < 0) {
+		fprintf(stderr, "Error reading from socket\n");
+		exit(1);
+	}
+	cout << "in thread " <<pthread_self() << endl;
+	printf("%s",buffer);
+	if (write(clifd,"Got your message\n",17)<0){
+		fprintf(stderr, "error writing to socket\n");
+		exit(1);
+	}
+	close(clifd);
 }
