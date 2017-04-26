@@ -16,15 +16,16 @@ int main(int argc, char **argv){
 	char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
 	struct hostent *server;
+	string type(argv[1]);
 	
-	if (argc != 3 && argc != 4){
+	for (int i=0; type[i]; i++) type[i] = tolower(type[i]);
+
+	if (argc != 3 && argc != 4 || (type != "server" && type != "client")){
 		fprintf(stderr, "correct calls to program\n");
 		fprintf(stderr, "	%s server port_number\n",argv[0]);
 		fprintf(stderr, "	%s client port_number host_name\n",argv[0]);
 		exit(1);
 	}
-
-	string type(argv[1]);
 
 	port = atoi(argv[2]);
 	if (port <5000){
@@ -32,18 +33,6 @@ int main(int argc, char **argv){
 		exit(1);
 	}
 
-	if (type == "server" && argc != 3){
-	       	fprintf(stderr, "incorrect number of arguments to program\n");
-		fprintf(stderr, "	%s server port_number\n", argv[0]);
-	}
-
-	if (type == "client" && argc != 4){
-		fprintf(stderr, "incorrect number of arguments to program\n");
-		fprintf(stderr, "	%s client port_number host\n", argv[0]);
-	}
-
-	for (int i=0; type[i]; i++) type[i] = tolower(type[i]);
-	
 	//server code
 	if (type == "server"){
 		//creates an endpoint for communication
@@ -117,16 +106,11 @@ int main(int argc, char **argv){
 		printf("%s",buffer);
 		sprintf(buffer,"client connected\n");
 		if (write(sockfd, buffer, strlen(buffer))<0) fprintf(stderr,"error writing to socket\n");
+		sprintf(buffer,"");
 		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
+		buffer[256]='\0';
 		printf("%s",buffer);
 		close(sockfd);
-	}
-	else{
-		fprintf(stderr, "incorrect function input\n");
-		fprintf(stderr, "server or client are the only accepted types\n");
-		fprintf(stderr, "	%s server port_number\n",argv[0]);
-		fprintf(stderr, "	%s client port_number host_name\n",argv[0]);
-		exit(1);
 	}
 
 	exit(0);
