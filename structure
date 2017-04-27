@@ -1,0 +1,14 @@
+user input queue (i.e. actions taken in gui)
+server event queue (input from clients (adding a ball) or from server)
+
+server:
+	thread to handle each client
+		thread to handle input from client
+		thtread to handle output to client
+
+	ball_simulation
+
+client:
+	thread to handle input from user
+	thread to handle input from server
+	display simulation
