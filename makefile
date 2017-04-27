@@ -3,7 +3,7 @@ CC = g++
 default: server
 
 server: ball_simulation.o server.o
-	$(CC) -o server ball_simulation.o server.o
+	$(CC) -pthread -o server ball_simulation.o server.o
 
 server.o: server.cpp server.h
 	$(CC) -c server.cpp

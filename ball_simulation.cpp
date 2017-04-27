@@ -27,9 +27,8 @@ int main(int argc, char **argv){
 	struct hostent *server;
 	string type(argv[1]);
 	pthread_t *server_threads;
-	pthread_t client_thread;
 
-	server_threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
+	threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
 	
 	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
 
@@ -77,7 +76,7 @@ int main(int argc, char **argv){
 
 		pthread_create(&client_thread,NULL,mess,NULL);
 			
-		s_read_write(sockfd);
+		c_read_write(sockfd);
 		close(sockfd);
 		pthread_join(client_thread,NULL);
 	}

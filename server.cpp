@@ -86,42 +86,44 @@ void read_write_socket(int c){
 
 void s_read_write(int c){
 	/*
-	 * function to test for messages from socket 
-	 * if there is a message than read that message and perform tasks on it
-	 * next check to see if there has been any input messages
-	 * if there are input messages than send them
+	 *
 	 */
-	int ret;
-	fd_set rs;
-	string reply;
+	int epoch;
+	char buffer[256];
+	string rec;
 
-	FD_ZERO(&rs);
-	FD_SET(c, &rs);
+	epoch = 1;
 
-	while(reply != "exit"){
-		//cout << "in while\n";
-		ret = select(c+1,&rs,NULL,NULL,NULL);
-		if (ret > 0){
-			//cout << "in if (ret >0)\n";
-			if (FD_ISSET(c,&rs)){
-				//cout << "about to read from socket\n";
-				ret = read(c,&reply[0],256);
-				//cout << ret << endl;
-				//if (ret == 0) reply = "exit";
-				//cout << reply << endl;
+	if (write(c,"Start",5)<0) error("error writing to socket\n");
+	read(c,buffer,256);
+	rec = string(buffer);
+	if (rec == "awk"){
+		while(rec != "exit"){
+			if (!m.empty()){
+				rec = m.front();
+				m.pop();
+				cout << "RECEIVED: " << rec << endl;
+				cout << "UPDATING BASED ON " << rec << endl;
+				cout << "WRITING TO CLIENT TO UPDATE" << endl;
+
 			}
 		}
-		if (!m.empty()){
-			reply = m.front();
-			m.pop();
-			cout << "writing " << reply << endl;
-			if (write(c,reply.c_str(),strlen(reply.c_str()))<0) error("error writing to socket\n");
-			cout << "wrote " << reply << endl;
-		}
-		else{
-//			cout << "	nothing to write\n";
-		}
 	}
+	else{
+		error("error in starting interaction process\n");
+	}
+
+	close(c);
+}
+
+void c_read_write(int c){
+	/*
+	 *
+	*/
+	int epoch;
+	
+	epoch = 1;
+
 	close(c);
 }
 
