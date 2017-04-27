@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 	string type(argv[1]);
 	pthread_t *server_threads;
 
-	threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
+	server_threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
 	
 	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
 
@@ -53,6 +53,7 @@ int main(int argc, char **argv){
 		//returns new file descriptor after connection
 		for (i=0; i<3; i++){
 			clifd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+			cout << "i: " << i << endl;
 			if (clifd < 0) {
 				fprintf(stderr,"Error on accept\n");
 				exit(1);
@@ -60,7 +61,9 @@ int main(int argc, char **argv){
 			pthread_create(&server_threads[i],NULL,task,NULL);
 		}
 		close(sockfd);
+		cout << "closed socket fd\n";
 		for (i=0; i<3; i++) pthread_join(server_threads[i],NULL);
+		cout << "threads joined\n";
 	}
 	else if (type == "client"){
 		sockfd = start_client(port,argv[3]);
@@ -74,11 +77,11 @@ int main(int argc, char **argv){
 		buffer[255]='\0';
 		printf("%s",buffer);
 
-		pthread_create(&client_thread,NULL,mess,NULL);
+		//pthread_create(&client_thread,NULL,mess,NULL);
 			
 		c_read_write(sockfd);
 		close(sockfd);
-		pthread_join(client_thread,NULL);
+		//pthread_join(client_thread,NULL);
 	}
 
 	exit(0);
@@ -88,11 +91,12 @@ void *task(void *){
 	pthread_t input_thread;
 	pthread_create(&input_thread,NULL,mess,NULL);
 	read_write_socket(clifd);
-	s_read_write(clifd);
+	//s_read_write(clifd);
 	pthread_join(input_thread,NULL);
 }
 
 void *mess(void *){
 	cout << "test\n";
 	iq();
+	cout << "out of iq\n";
 }

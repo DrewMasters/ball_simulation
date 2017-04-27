@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <queue>
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,30 +89,6 @@ void s_read_write(int c){
 	/*
 	 *
 	 */
-	int epoch;
-	char buffer[256];
-	string rec;
-
-	epoch = 1;
-
-	if (write(c,"Start",5)<0) error("error writing to socket\n");
-	read(c,buffer,256);
-	rec = string(buffer);
-	if (rec == "awk"){
-		while(rec != "exit"){
-			if (!m.empty()){
-				rec = m.front();
-				m.pop();
-				cout << "RECEIVED: " << rec << endl;
-				cout << "UPDATING BASED ON " << rec << endl;
-				cout << "WRITING TO CLIENT TO UPDATE" << endl;
-
-			}
-		}
-	}
-	else{
-		error("error in starting interaction process\n");
-	}
 
 	close(c);
 }
@@ -120,17 +97,18 @@ void c_read_write(int c){
 	/*
 	 *
 	*/
-	int epoch;
-	
-	epoch = 1;
 
-	close(c);
 }
 
 void iq(){
 	string input;
 	
-	getline(std::cin,input);
-	m.push(input);
-	input="";
+	while(input!="exit"){
+		input="";
+		getline(std::cin,input);
+		m.push(input);
+		cout << endl << input << endl << endl;
+		transform(input.begin(),input.end(),input.begin(),::tolower);
+		cout << endl << input << endl;
+	}
 }
