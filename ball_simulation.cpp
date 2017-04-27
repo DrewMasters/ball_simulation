@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdio.h>
+#include <queue>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -14,7 +15,7 @@
 using namespace std;
 
 void *task(void *);
-void read_write_socket(int c);
+void *mess(void *);
 static int clifd;
 static char buffer[256];
 
@@ -25,9 +26,10 @@ int main(int argc, char **argv){
 	struct sockaddr_in  cli_addr;
 	struct hostent *server;
 	string type(argv[1]);
-	pthread_t *threads;
+	pthread_t *server_threads;
+	pthread_t client_thread;
 
-	threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
+	server_threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
 	
 	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
 
@@ -47,7 +49,6 @@ int main(int argc, char **argv){
 	//server code
 	if (type == "server"){
 		sockfd = start_server(port);
-		cout << "started server " << sockfd << endl;
 		clilen = sizeof(cli_addr);
 		//blocks until client connects to server
 		//returns new file descriptor after connection
@@ -57,14 +58,14 @@ int main(int argc, char **argv){
 				fprintf(stderr,"Error on accept\n");
 				exit(1);
 			}
-			pthread_create(&threads[i],NULL,task,NULL);
+			pthread_create(&server_threads[i],NULL,task,NULL);
 		}
 		close(sockfd);
-		for (i=0; i<3; i++) pthread_join(threads[i],NULL);
+		for (i=0; i<3; i++) pthread_join(server_threads[i],NULL);
 	}
 	else if (type == "client"){
 		sockfd = start_client(port,argv[3]);
-		cout << "started client " << sockfd << endl;
+		//cout << "started client " << sockfd << endl;
 		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
 		printf("%s",buffer);
 		sprintf(buffer,"client connected\n");
@@ -73,14 +74,26 @@ int main(int argc, char **argv){
 		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
 		buffer[255]='\0';
 		printf("%s",buffer);
-		
-		//read_write_socket(sockfd);
+
+		pthread_create(&client_thread,NULL,mess,NULL);
+			
+		s_read_write(sockfd);
 		close(sockfd);
+		pthread_join(client_thread,NULL);
 	}
 
 	exit(0);
 }
 
 void *task(void *){
+	pthread_t input_thread;
+	pthread_create(&input_thread,NULL,mess,NULL);
 	read_write_socket(clifd);
+	s_read_write(clifd);
+	pthread_join(input_thread,NULL);
+}
+
+void *mess(void *){
+	cout << "test\n";
+	iq();
 }
