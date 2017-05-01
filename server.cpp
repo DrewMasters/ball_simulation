@@ -11,11 +11,12 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <pthread.h>
+#include <thread>
 #include "server.h"
+#include <mutex>
 using namespace std;
 
-queue<string> m;
+queue <string> input;
 
 void error(string s){
 	fprintf(stderr, "%s",s.c_str());
@@ -36,7 +37,7 @@ int start_server(int port){
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(port);
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) error("error binding to port\n");
+	if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) error("error binding to port\n");
 	listen(sockfd,5);	
 	return sockfd;
 };
@@ -82,33 +83,49 @@ void read_write_socket(int c){
 		fprintf(stderr, "error writing to socket\n");
 		exit(1);
 	}
-	close(c);
+	//close(c);
 }
 
-void s_read_write(int c){
-	/*
-	 *
-	 */
+void server_s(int c){
+	cout << "in server thread\n";
 
-	close(c);
-}
+	char buffer[256];
+	string tmp="";
 
-void c_read_write(int c){
-	/*
-	 *
-	*/
-
-}
-
-void iq(){
-	string input;
-	
-	while(input!="exit"){
-		input="";
-		getline(std::cin,input);
-		m.push(input);
-		cout << endl << input << endl << endl;
-		transform(input.begin(),input.end(),input.begin(),::tolower);
-		cout << endl << input << endl;
+	read_write_socket(c);
+	while (tmp!="exit"){
+		if (read(c,buffer,256)<0) error("Error reading from socket\n");
+		tmp = string(buffer);
+		input.push(tmp);
+		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
 	}
+}
+
+void local_server(){
+	cout << "in local server\n";
+	char buffer[256];
+	string tmp="";
+	cout << "flag: " << flag << endl;
+	while (tmp!="exit"){
+		tmp="";
+		for (int i=0; i < 256; i++) buffer[i]=0;
+		cout << "about to read in input\n";
+		if (read(fileno(stdin),buffer,256)<0) error("Error reading from socket\n");
+		printf("buffer: %s\n",buffer);
+		cout << "input read from stdin\n";
+		tmp = string(buffer);
+		cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
+		tmp.erase(tmp.length()-1);
+		cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
+		input.push(tmp);
+		cout << "pushged to queue\n";
+		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
+	}
+	cout << "exiting local_server\n";
+	flag=1;
+	cout << "flag: " << flag << endl;
+}
+
+void client_s(int c){
+
 }

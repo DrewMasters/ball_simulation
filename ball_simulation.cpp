@@ -10,34 +10,34 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <pthread.h>
+#include <thread>
 #include "server.h"
+#include <vector>
 using namespace std;
 
-void *task(void *);
-void *mess(void *);
-static int clifd;
-static char buffer[256];
+int flag = 0;
 
 int main(int argc, char **argv){
-	int i,port, sock, sockfd;//, clifd;
+	int i,port, sock, sockfd, clifd;
+	vector <thread> clients;
 	socklen_t clilen;
-	//char buffer[256];
+	char buffer[256];
 	struct sockaddr_in  cli_addr;
 	struct hostent *server;
-	string type(argv[1]);
-	pthread_t *server_threads;
+	string type;
+	thread *c_s,*l_s;;
 
-	server_threads = (pthread_t *)malloc(sizeof(pthread_t)*3);
+	if (argc == 3 || argc ==4) type = string(argv[1]);
+	else type = "error";
 	
-	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
-
 	if ((argc != 3 && argc != 4) || (type != "server" && type != "client")){
 		fprintf(stderr, "correct calls to program\n");
 		fprintf(stderr, "	%s server port_number\n",argv[0]);
 		fprintf(stderr, "	%s client port_number host_name\n",argv[0]);
 		exit(1);
 	}
+
+	for (i=0; type[i]; i++) type[i] = tolower(type[i]);
 
 	port = atoi(argv[2]);
 	if (port <5000){
@@ -49,20 +49,45 @@ int main(int argc, char **argv){
 	if (type == "server"){
 		sockfd = start_server(port);
 		clilen = sizeof(cli_addr);
+
+		l_s = new thread(local_server);
+
 		//blocks until client connects to server
 		//returns new file descriptor after connection
-		for (i=0; i<3; i++){
+		for ( ; ; ){
 			clifd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-			cout << "i: " << i << endl;
+			cout << "new connection\n";
+			if(flag==1){
+				l_s->join();
+				cout << "server exited\n";
+				break;
+			}
 			if (clifd < 0) {
 				fprintf(stderr,"Error on accept\n");
 				exit(1);
 			}
-			pthread_create(&server_threads[i],NULL,task,NULL);
+			//c_s = new thread(server_s, clifd);
+			cout << "about to create thread\n";
+			cout << "created thread\n";
+			clients.push_back(thread(server_s,clifd));
+			cout << "stored thread\n";
+			for (i = 0; i < clients.size(); i++){
+				if(clients[i].joinable()){
+					cout << "i: " << i << " is joinable\n";
+					clients[i].join();
+					cout << i << " joined\n";
+					clients.erase(clients.begin()+i);
+					cout << i << " erased\n";
+				}
+			}
+			cout << "at end\n";
+			if(flag==1){
+				l_s->join();
+				break;
+			}
 		}
 		close(sockfd);
 		cout << "closed socket fd\n";
-		for (i=0; i<3; i++) pthread_join(server_threads[i],NULL);
 		cout << "threads joined\n";
 	}
 	else if (type == "client"){
@@ -76,27 +101,16 @@ int main(int argc, char **argv){
 		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
 		buffer[255]='\0';
 		printf("%s",buffer);
+		write(sockfd,"exit",4);
 
-		//pthread_create(&client_thread,NULL,mess,NULL);
+		//c_s = new thread(client_s);
+		//pthread_create(c_s,NULL,client_s,(void *)&sockfd);
+		cout << "created thread\n";
+		//c_s->join();
+		cout << "thread joined\n";		
 			
-		c_read_write(sockfd);
 		close(sockfd);
-		//pthread_join(client_thread,NULL);
 	}
 
 	exit(0);
-}
-
-void *task(void *){
-	pthread_t input_thread;
-	pthread_create(&input_thread,NULL,mess,NULL);
-	read_write_socket(clifd);
-	//s_read_write(clifd);
-	pthread_join(input_thread,NULL);
-}
-
-void *mess(void *){
-	cout << "test\n";
-	iq();
-	cout << "out of iq\n";
 }
