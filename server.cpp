@@ -87,6 +87,9 @@ void read_write_socket(int c){
 }
 
 void server_s(int c){
+	/*
+	 * reads input from clients and puts it on the update queue
+	 */
 	cout << "in server thread\n";
 
 	char buffer[256];
@@ -102,6 +105,10 @@ void server_s(int c){
 }
 
 void local_server(){
+	/*
+	 * Gets input from stdin from user of server program
+	 * and puts it on the update queue
+	 */
 	cout << "in local server\n";
 	char buffer[256];
 	string tmp="";
@@ -110,7 +117,7 @@ void local_server(){
 		tmp="";
 		for (int i=0; i < 256; i++) buffer[i]=0;
 		cout << "about to read in input\n";
-		if (read(fileno(stdin),buffer,256)<0) error("Error reading from socket\n");
+		if (read(fileno(stdin),buffer,256)<0) error("Error reading from stdin\n");
 		printf("buffer: %s\n",buffer);
 		cout << "input read from stdin\n";
 		tmp = string(buffer);
@@ -126,6 +133,53 @@ void local_server(){
 	cout << "flag: " << flag << endl;
 }
 
-void client_s(int c){
+void server_update(int c){
+	/*
+	 * Performs action on update queue and than sends
+	 * it to cliens
+	 */
+	string tmp;
 
+	while (flag==0){
+		if (!input.empty()){
+			tmp = input.front();
+			input.pop();
+			if (write(c,tmp.c_str(),256)<0) error("Error writing from socket\n");
+		}
+	}
+}
+
+void client_s(int c){
+	/*
+	 * receives input from client user and sends to server
+	 */
+	char buffer[256];
+	string tmp="";
+
+	while(tmp!="exit"){
+		tmp="";
+		for (int i=0; i<256; i++) buffer[i]=0;
+		if(read(fileno(stdin),buffer,256)<0) error("Error reading from stdin\n");
+		tmp = string(buffer);
+		tmp.erase(tmp.length()-1);
+		cout << tmp << endl;
+		if(write(c,tmp.c_str(),256)<0) error("Writing to socket\n");
+		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
+	}
+	flag=1;
+}
+
+void client_update(int c){
+	/*
+	 * receives input from server through socket
+	 * takes this input and performs necessay update action
+	 */
+	string tmp;
+	char buffer[256];
+
+	while(flag==0){
+		if(read(c,buffer,256)<0) error("Error reading from socket\n");
+		tmp = string(buffer);
+		cout << tmp << endl;
+	}
 }

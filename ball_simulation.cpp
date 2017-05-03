@@ -103,12 +103,15 @@ int main(int argc, char **argv){
 		printf("%s",buffer);
 		write(sockfd,"exit",4);
 
-		//c_s = new thread(client_s);
-		//pthread_create(c_s,NULL,client_s,(void *)&sockfd);
+		c_s = new thread(client_s);
+		l_s = new thread(client_update);
+
 		cout << "created thread\n";
-		//c_s->join();
 		cout << "thread joined\n";		
-			
+		
+		c_s->join();
+		l_s->join();
+
 		close(sockfd);
 	}
 
