@@ -13,13 +13,19 @@
 #include <thread>
 #include "server.h"
 #include <vector>
+#include <mutex>
 using namespace std;
 
 int flag = 0;
+queue <string> input;
+int client_count=0;
+int current_count = 0;
+mutex count_lock;
 
 int main(int argc, char **argv){
 	int i,port, sock, sockfd, clifd;
 	vector <thread> clients;
+	vector <int> cli;
 	socklen_t clilen;
 	char buffer[256];
 	struct sockaddr_in  cli_addr;
@@ -47,6 +53,8 @@ int main(int argc, char **argv){
 
 	//server code
 	if (type == "server"){
+		vector <thread> t;
+
 		sockfd = start_server(port);
 		clilen = sizeof(cli_addr);
 
@@ -71,7 +79,12 @@ int main(int argc, char **argv){
 			cout << "created thread\n";
 			clients.push_back(thread(server_s,clifd));
 			cout << "stored thread\n";
-			for (i = 0; i < clients.size(); i++){
+			cout << "adding clifd to vector\n";
+			cli.push_back(clifd);
+			client_count++;
+			cout << "added clifd to vector " << clifd << endl;
+			t.push_back(thread(server_update,clifd));
+			/*for (i = 0; i < clients.size(); i++){
 				if(clients[i].joinable()){
 					cout << "i: " << i << " is joinable\n";
 					clients[i].join();
@@ -79,7 +92,7 @@ int main(int argc, char **argv){
 					clients.erase(clients.begin()+i);
 					cout << i << " erased\n";
 				}
-			}
+			}*/
 			cout << "at end\n";
 			if(flag==1){
 				l_s->join();
@@ -93,18 +106,18 @@ int main(int argc, char **argv){
 	else if (type == "client"){
 		sockfd = start_client(port,argv[3]);
 		//cout << "started client " << sockfd << endl;
-		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
+		if (read(sockfd, buffer, 256)<0) fprintf(stderr, "Error reading from socket\n");
 		printf("%s",buffer);
 		sprintf(buffer,"client connected\n");
 		if (write(sockfd, buffer, strlen(buffer))<0) fprintf(stderr,"error writing to socket\n");
 		sprintf(buffer,"");
-		if (read(sockfd, buffer, 256)<0)fprintf(stderr, "Error reading from socket\n");
+		if (read(sockfd, buffer, 256)<0) fprintf(stderr, "Error reading from socket\n");
 		buffer[255]='\0';
 		printf("%s",buffer);
-		write(sockfd,"exit",4);
+		//write(sockfd,"exit",4);
 
-		c_s = new thread(client_s);
-		l_s = new thread(client_update);
+		c_s = new thread(client_s,sockfd);
+		l_s = new thread(client_update,sockfd);
 
 		cout << "created thread\n";
 		cout << "thread joined\n";		

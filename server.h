@@ -7,3 +7,7 @@ void client_update(int c);
 void local_server();
 void server_update(int c);
 extern int flag;
+extern std::queue <std::string> input;
+extern int client_count;
+extern int current_count;
+extern std::mutex count_lock;

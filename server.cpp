@@ -16,11 +16,11 @@
 #include <mutex>
 using namespace std;
 
-queue <string> input;
+//queue <string> input;
 
 void error(string s){
 	fprintf(stderr, "%s",s.c_str());
-	exit(1);
+	//exit(1);
 }
 
 int start_server(int port){
@@ -97,9 +97,13 @@ void server_s(int c){
 
 	read_write_socket(c);
 	while (tmp!="exit"){
+		//cout << "about to read from client socket\n";
 		if (read(c,buffer,256)<0) error("Error reading from socket\n");
+		if (flag ==1) break;
+		//cout << "read from client\n";
 		tmp = string(buffer);
 		input.push(tmp);
+		//cout << "pushed client input onto queue\n";
 		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
 	}
 }
@@ -112,20 +116,24 @@ void local_server(){
 	cout << "in local server\n";
 	char buffer[256];
 	string tmp="";
-	cout << "flag: " << flag << endl;
+	//cout << "flag: " << flag << endl;
 	while (tmp!="exit"){
 		tmp="";
 		for (int i=0; i < 256; i++) buffer[i]=0;
-		cout << "about to read in input\n";
-		if (read(fileno(stdin),buffer,256)<0) error("Error reading from stdin\n");
+		//cout << "about to read in input\n";
+		if (read(fileno(stdin),buffer,256)<0) {
+			error("Error reading from stdin\n");
+			break;
+		}
 		printf("buffer: %s\n",buffer);
-		cout << "input read from stdin\n";
+		//cout << "input read from stdin\n";
 		tmp = string(buffer);
-		cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
+		//cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
 		tmp.erase(tmp.length()-1);
-		cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
+		//cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
 		input.push(tmp);
-		cout << "pushged to queue\n";
+		//cout << "input.front(): " << input.front() << endl;
+		//cout << "pushged to queue\n";
 		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
 	}
 	cout << "exiting local_server\n";
@@ -138,15 +146,37 @@ void server_update(int c){
 	 * Performs action on update queue and than sends
 	 * it to cliens
 	 */
-	string tmp;
-
+	string tmp, last="";
+	int testing=0;
+	//cout << "in server update\n";
 	while (flag==0){
+		if (testing==0){
+			//cout << "input empty? " << input.empty() << " current_count: " << current_count << " client_count: " << client_count << endl;
+			//testing=1;
+		}
 		if (!input.empty()){
-			tmp = input.front();
-			input.pop();
-			if (write(c,tmp.c_str(),256)<0) error("Error writing from socket\n");
+			//cout << "input empty? " << input.empty() << " current_count: " << current_count << " client_count: " << client_count << endl;
+			if (last!=input.front() || last ==""){
+				tmp = input.front();
+				count_lock.lock();
+				current_count++;
+				count_lock.unlock();
+				last = tmp;
+				if(current_count==client_count){
+					cout << "popping " << input.front() << endl;
+					input.pop();
+					count_lock.lock();
+					current_count = 0;
+					cout << "setting current_count=0\n";
+					count_lock.unlock();
+				}
+				if (write(c,tmp.c_str(),256)<0) error("Error writing from socket\n");
+			}
+			//cout << "server update tmp: " << tmp << endl;
+			//if (write(c,tmp.c_str(),256)<0) error("Error writing from socket\n");
 		}
 	}
+	cout << "exiting server_update\n";
 }
 
 void client_s(int c){
@@ -155,18 +185,21 @@ void client_s(int c){
 	 */
 	char buffer[256];
 	string tmp="";
-
+	cout << "in client_s\n";
 	while(tmp!="exit"){
 		tmp="";
 		for (int i=0; i<256; i++) buffer[i]=0;
 		if(read(fileno(stdin),buffer,256)<0) error("Error reading from stdin\n");
 		tmp = string(buffer);
+		//cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
 		tmp.erase(tmp.length()-1);
-		cout << tmp << endl;
+		//cout << "tmp: " << tmp << " tmp length: " << tmp.length() << endl;
 		if(write(c,tmp.c_str(),256)<0) error("Writing to socket\n");
+		//cout << "client wrote to server\n";
 		transform(tmp.begin(),tmp.end(),tmp.begin(),::tolower);
 	}
 	flag=1;
+	cout << "exiting client_s\n";
 }
 
 void client_update(int c){
@@ -176,10 +209,12 @@ void client_update(int c){
 	 */
 	string tmp;
 	char buffer[256];
-
+	//cout << "in client_update\n";
 	while(flag==0){
 		if(read(c,buffer,256)<0) error("Error reading from socket\n");
+		if (flag == 1) break;
 		tmp = string(buffer);
 		cout << tmp << endl;
 	}
+	cout << "exiting client_update\n";
 }
