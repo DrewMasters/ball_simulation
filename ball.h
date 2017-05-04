@@ -27,6 +27,8 @@ class ball_simulation{
 		ball_simulation(int x_limit, int y_limit);
 		void add_ball(double m, double r, double vx, double vy, double x, double y);
 		void update();
+		double distance(double x1, double x2, double y1, double y2);
+		void resolve_collision(ball B1, ball B2);
 	private:
 		vector <ball> balls;
 		int x_wall;

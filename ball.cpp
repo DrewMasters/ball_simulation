@@ -75,5 +75,33 @@ void ball_simulation::add_ball(double m, double r, double vx, double vy, double 
 }
 
 void ball_simulation::update(){
+	int i, j;
+	double r, dist;
+
+	for (i=0; i < balls.size(); i++){
+		for (j=0; j < balls.size(); j++){
+			if (i!=j){
+				r = balls[i].get_r()+balls[j].get_r();
+				r = r*r;
+				dist = distance(balls[i].get_x(),balls[j].get_x(), balls[i].get_y(),balls[j].get_y());
+				dist = dist*dist;
+				if (dist <= r){
+					//collision has occurred
+					resolve_collision(balls[i],balls[j]);
+				}
+			}
+		}
+	}
+
+	for (i=0; i < balls.size(); i++){
+		
+	}
+}
+
+double ball_simulation::distance(double x1, double x2, double y1, double y2){
+
+}
+
+double ball_simulation::resolve_collision(ball B1, ball B2){
 
 }
