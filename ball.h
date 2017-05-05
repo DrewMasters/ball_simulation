@@ -1,3 +1,21 @@
+#include <vector>
+
+class vec{
+	public:
+		vec(double x, double y);
+		double magnitude();
+		double get_x_comp();
+		double get_y_comp();
+	private:
+		double x_comp;
+		double y_comp;
+};
+
+double dot_product(vec V1,vec V2);
+vec add_vec(vec V1, vec V2);
+vec scale_vec(vec v, double scale);
+vec tangent_vec(vec v);
+
 class ball{
 	public:
 		ball(int ball_id, double m, double r, double vx, double vy, double x, double y);
@@ -20,7 +38,9 @@ class ball{
 		double radius;
 		double x;
 		double y;
-}
+};
+
+vec normal_vec(ball B1, ball B2);
 
 class ball_simulation{
 	public:
@@ -28,10 +48,11 @@ class ball_simulation{
 		void add_ball(double m, double r, double vx, double vy, double x, double y);
 		void update();
 		double distance(double x1, double x2, double y1, double y2);
-		void resolve_collision(ball B1, ball B2);
+		void resolve_collision(ball &B1, ball &B2);
+		void move_ball(ball &B1);
 	private:
-		vector <ball> balls;
+		std::vector <ball> balls;
 		int x_wall;
 		int y_wall;
 		int ball_count;
-}
+};
